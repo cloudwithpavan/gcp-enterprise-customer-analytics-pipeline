@@ -247,6 +247,18 @@ You can also run the queries from [`sql/verification_queries.sql`](sql/verificat
 
 The following screenshots were captured from the completed project run and its BigQuery verification queries.
 
+### Airflow — DAG list in Cloud Composer
+
+Shows the deployed `customer_analytics_pipeline` DAG in the Composer Airflow UI, alongside the environment's DAG list.
+
+![Airflow DAG list](docs/screenshots/airflow-dags-list.png)
+
+### Airflow — successful task graph
+
+Shows the five tasks (`file_detection`, `ingestion`, `validation`, `transformation`, and `final_reporting`) connected in execution order and marked successful.
+
+![Airflow task graph](docs/screenshots/airflow-task-graph.png)
+
 ### Airflow — successful pipeline run
 
 ![Airflow DAG success](docs/screenshots/airflow-dag-success.png)
