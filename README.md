@@ -1,110 +1,142 @@
-# Project 1 — Customer Analytics Data Pipeline on Google Cloud
+<div align="center">
 
-An end-to-end GCP data engineering portfolio project. Terraform provisions the infrastructure, Cloud Composer runs an Apache Airflow DAG, Google Cloud Storage holds the source CSV, and BigQuery stores validated, cleaned data and an analytical report.
+# ☁️ Customer Analytics Data Pipeline on Google Cloud
 
-> **Project 1 intentionally does not use a GCS sensor.** The `file_detection` task checks for the configured file when a DAG run starts. The DAG runs daily at 02:00 UTC (07:30 IST) and can be triggered manually. A separate sensor-enabled version will be Project 2.
+### Infrastructure as Code · Workflow Orchestration · Data Quality · Analytics
 
-## Architecture
+**An end-to-end GCP data engineering project built with Terraform, Cloud Storage, Cloud Composer (Apache Airflow), and BigQuery.**
 
-See [architecture and workflow](docs/architecture.md).
+[![Google Cloud](https://img.shields.io/badge/Google%20Cloud-GCP-4285F4?logo=googlecloud&logoColor=white)](https://cloud.google.com/)
+[![Terraform](https://img.shields.io/badge/Infrastructure-Terraform-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![Apache Airflow](https://img.shields.io/badge/Orchestration-Apache%20Airflow-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
+[![BigQuery](https://img.shields.io/badge/Warehouse-BigQuery-669DF6?logo=googlebigquery&logoColor=white)](https://cloud.google.com/bigquery)
+[![Python](https://img.shields.io/badge/Language-Python-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 
-**Flow:** CSV in GCS → Airflow file detection → BigQuery staging → validation → transformation → city report.
+**Author: Gummadi Pavan Kumar**  
+*Cloud & Data Engineering Portfolio Project*
 
-## Technologies
+</div>
 
-- Google Cloud Storage (GCS)
-- Google Cloud Composer / Apache Airflow 2
-- BigQuery (SQL)
-- Terraform / Infrastructure as Code
-- Python and Google Cloud client libraries
+---
 
-## Pipeline tasks
+## 📌 Project overview
 
-1. **`file_detection`** — confirms the configured CSV exists in the raw bucket.
-2. **`ingestion`** — loads CSV records into `customers_staging`.
-3. **`validation`** — checks required fields, nonnegative salary, and duplicate customer IDs.
-4. **`transformation`** — trims text and normalizes email addresses into `customers_cleaned`.
-5. **`final_reporting`** — creates `customer_city_report` with customer count, average salary, total salary, and report timestamp by city.
+This project demonstrates a complete batch data pipeline on Google Cloud. Terraform provisions the required infrastructure, a CSV file is stored in Google Cloud Storage (GCS), Cloud Composer orchestrates the workflow with Apache Airflow, and BigQuery stores the cleaned customer data and city-level analytics.
 
-## Verified execution evidence
+The pipeline separates ingestion, validation, transformation, and reporting into individual Airflow tasks so that each stage can be monitored and debugged independently.
 
-The following screenshots were captured from the deployed project on 24 October 2026. They show one successful Airflow DAG run and successful BigQuery queries.
+## 🏗️ Architecture
 
-### Airflow — all five tasks succeeded
+```mermaid
+flowchart TB
+    TF["Terraform<br/>Infrastructure as Code"] -. provisions .-> GCS
+    TF -. provisions .-> COMPOSER
+    TF -. provisions .-> BQ
 
-![Airflow DAG success](docs/screenshots/airflow-dag-success.png)
+    CSV["customers.csv"] --> GCS["Google Cloud Storage<br/>Raw data bucket"]
+    GCS --> DETECT["1. File detection<br/>Airflow task"]
+    DETECT --> INGEST["2. Ingestion<br/>Load CSV to staging"]
+    INGEST --> STAGE[("BigQuery<br/>customers_staging")]
+    STAGE --> VALIDATE["3. Validation<br/>Required fields & duplicate IDs"]
+    VALIDATE --> TRANSFORM["4. Transformation<br/>Standardize and clean data"]
+    TRANSFORM --> CLEAN[("BigQuery<br/>customers_cleaned")]
+    CLEAN --> REPORT["5. Final reporting<br/>Aggregate by city"]
+    REPORT --> MART[("BigQuery<br/>customer_city_report")]
 
-### BigQuery — city-level report
+    COMPOSER["Cloud Composer<br/>Managed Apache Airflow"] -. orchestrates .-> DETECT
 
-![BigQuery city report](docs/screenshots/bigquery-city-report.png)
-
-### BigQuery — cleaned customer data
-
-![BigQuery cleaned customers](docs/screenshots/bigquery-cleaned-customers.png)
-
-## BigQuery output tables
-
-Dataset: `gcp-data-project-510810.practice`
-
-- `customers_staging` — loaded source records
-- `customers_cleaned` — validated and cleaned customer data
-- `customer_city_report` — aggregate report by city
-
-Expected city-level output for the included sample CSV:
-
-| City | Customers | Average salary | Total salary |
-|---|---:|---:|---:|
-| Bangalore | 2 | 50000 | 100000 |
-| Chennai | 1 | 35000 | 35000 |
-| Hyderabad | 2 | 67500 | 135000 |
-
-## Run verification SQL
-
-Open BigQuery Studio and run the queries in [`sql/verification_queries.sql`](sql/verification_queries.sql), or run these directly:
-
-```sql
-SELECT *
-FROM `gcp-data-project-510810.practice.customer_city_report`
-ORDER BY city;
-
-SELECT *
-FROM `gcp-data-project-510810.practice.customers_cleaned`
-LIMIT 20;
+    classDef cloud fill:#E8F0FE,stroke:#4285F4,color:#174EA6,stroke-width:1.5px;
+    classDef process fill:#E6F4EA,stroke:#34A853,color:#137333,stroke-width:1.5px;
+    classDef warehouse fill:#FEF7E0,stroke:#F9AB00,color:#7A4F01,stroke-width:1.5px;
+    class GCS,COMPOSER,TF cloud;
+    class DETECT,INGEST,VALIDATE,TRANSFORM,REPORT process;
+    class STAGE,CLEAN,MART warehouse;
 ```
 
-## Repository structure
+### 🔄 Workflow sequence
+
+```mermaid
+sequenceDiagram
+    participant T as Terraform
+    participant G as Cloud Storage
+    participant A as Cloud Composer / Airflow
+    participant B as BigQuery
+    T->>G: Create bucket and upload customers.csv
+    T->>A: Create Composer environment and upload DAG
+    A->>G: Check for configured CSV
+    A->>B: Load CSV into customers_staging
+    A->>B: Validate and create customers_cleaned
+    A->>B: Aggregate city metrics
+    B-->>A: customer_city_report ready
+```
+
+## ✨ What the pipeline does
+
+| Stage | Airflow task | What happens |
+|---|---|---|
+| 1 | `file_detection` | Checks that the configured input CSV exists in GCS when the DAG run starts. |
+| 2 | `ingestion` | Loads the CSV into the BigQuery staging table. |
+| 3 | `validation` | Checks required fields and duplicate customer IDs before continuing. |
+| 4 | `transformation` | Standardizes customer data and creates the cleaned table. |
+| 5 | `final_reporting` | Produces city-level customer counts and salary metrics. |
+
+The DAG is scheduled for **02:00 UTC (07:30 IST)** and can also be triggered manually. It is configured with retries for transient task failures.
+
+## 🧰 Technology stack
+
+- **Google Cloud Storage:** raw CSV landing zone
+- **Cloud Composer / Apache Airflow:** DAG scheduling, dependencies, retries, task logs, and orchestration
+- **BigQuery:** staging, cleaned customer records, and analytical reporting
+- **Terraform:** repeatable infrastructure provisioning
+- **Python:** Airflow DAG and data-processing logic
+- **SQL:** data verification and analytical queries
+- **GitHub:** source control and project documentation
+
+## 📁 Repository structure
 
 ```text
 project1-customer-analytics-pipeline/
 ├── dags/
+│   ├── __init__.py
 │   └── customer_analytics_pipeline.py
 ├── data/
 │   └── customers.csv
 ├── docs/
 │   ├── architecture.md
 │   └── screenshots/
+│       ├── airflow-dag-success.png
+│       ├── bigquery-city-report.png
+│       └── bigquery-cleaned-customers.png
 ├── sql/
 │   └── verification_queries.sql
 ├── terraform/
 │   ├── main.tf
-│   ├── variables.tf
 │   ├── outputs.tf
+│   ├── variables.tf
 │   └── terraform.tfvars.example
-├── requirements.txt
 ├── .gitignore
-└── README.md
+├── LICENSE
+├── README.md
+└── requirements.txt
 ```
 
-## Deploying the infrastructure (Windows PowerShell)
+---
 
-### Prerequisites
+# 🚀 Run the project
 
-- Google Cloud project with billing enabled.
-- Google Cloud CLI (`gcloud`), Terraform, and Git installed.
-- IAM permissions to enable APIs, create service accounts, grant IAM roles, and create Cloud Composer, GCS and BigQuery resources.
-- Review Cloud Composer pricing before provisioning; it can incur substantial charges.
+> **Execution order:** configure and deploy infrastructure first, run the Airflow pipeline second, and verify BigQuery tables and output third.
 
-### Authenticate
+## 1. Prerequisites
+
+- A Google Cloud project with billing enabled. The example project ID is `gcp-data-project-510810`.
+- Google Cloud CLI (`gcloud`) installed and available in PowerShell.
+- Terraform installed.
+- Permissions to enable APIs, create service accounts and IAM bindings, create GCS buckets and BigQuery datasets, and create Cloud Composer environments.
+- Review Cloud Composer pricing before deployment; Composer can be a significant ongoing cost.
+
+## 2. Authenticate to Google Cloud
+
+Run from the **repository root** in PowerShell:
 
 ```powershell
 gcloud auth login
@@ -113,64 +145,169 @@ gcloud auth application-default login
 gcloud config get-value project
 ```
 
-### Configure and validate Terraform
+The final command should display `gcp-data-project-510810`.
 
-From the repository root:
+## 3. Configure Terraform
 
 ```powershell
 cd terraform
 Copy-Item terraform.tfvars.example terraform.tfvars
-notepad terraform.tfvars
 ```
 
-Set your project ID and verify these locations: GCS `US`, BigQuery `US`, Composer region `us-central1`. Change `bucket_name` if the name is already taken (GCS names are globally unique). The local `terraform.tfvars` is excluded from Git.
+Edit `terraform.tfvars` and confirm these values:
 
-If dataset `practice` already exists and is not in the current Terraform state, import it before planning:
+```hcl
+project_id          = "gcp-data-project-510810"
+composer_region      = "us-central1"
+gcs_bucket_location  = "US"
+bigquery_location    = "US"
+dataset_id           = "practice"
+```
+
+Use a **globally unique** GCS bucket name. If the default bucket name is unavailable, change `bucket_name` in `terraform.tfvars`.
+
+> `terraform.tfvars` is a local configuration file and should not be committed to GitHub. Never commit credentials, service-account keys, or Terraform state files.
+
+## 4. Handle an existing BigQuery dataset if needed
+
+If `practice` already exists in the project and is not already tracked by this Terraform state, import it before planning:
 
 ```powershell
 terraform import google_bigquery_dataset.practice projects/gcp-data-project-510810/datasets/practice
 ```
 
-Then run:
+Do not import it again if it is already tracked. Review any proposed changes to existing resources carefully to protect data.
+
+## 5. Initialize, validate, plan, and apply
 
 ```powershell
 terraform init -upgrade
 terraform fmt -recursive
 terraform validate
 terraform plan
+```
+
+Review the plan. Stop if it proposes unexpected deletion or replacement of existing resources. If the plan is correct, provision the infrastructure and upload the sample CSV and DAG:
+
+```powershell
 terraform apply
+```
+
+Type `yes` only after reviewing the plan. Wait until Terraform finishes successfully; Cloud Composer provisioning can take many minutes.
+
+## 6. Get the Airflow URL
+
+```powershell
 terraform output
 ```
 
-Review the plan for unexpected replacement or deletion before approving `terraform apply`. To run an already-deployed pipeline, open the Airflow URL from `terraform output`, locate `customer_analytics_pipeline`, and trigger a DAG run.
+Find `composer_airflow_uri`, open it in your browser, and sign in. In Airflow:
 
-## Publish to GitHub
+1. Find `customer_analytics_pipeline`.
+2. Wait for the DAG to be parsed and check for import errors.
+3. Trigger the DAG manually.
+4. Open the run in Grid or Graph view and inspect task logs if needed.
+5. Confirm all five tasks show **Success**.
 
-1. Create a **public or private** empty repository named `project1-customer-analytics-pipeline` (or your preferred name). Do not initialize it with a README if you will push this folder as-is.
-2. From the repository root, run:
+## 7. Verify the BigQuery output
 
-```powershell
-git init
-git add .
-git status
-git commit -m "Project 1: GCP customer analytics pipeline"
-git branch -M main
-git remote add origin https://github.com/YOUR_GITHUB_USERNAME/project1-customer-analytics-pipeline.git
-git push -u origin main
+Open **BigQuery Studio → SQL workspace** and run the following queries after the Airflow DAG succeeds.
+
+### Query A — City-level analytics
+
+```sql
+SELECT *
+FROM `gcp-data-project-510810.practice.customer_city_report`
+ORDER BY city;
 ```
 
-Replace `YOUR_GITHUB_USERNAME` with your GitHub username. If the remote is already configured, check it with `git remote -v` and do not add it twice.
+### Expected output — City report
 
-### Security checklist before pushing
+| city | customer_count | average_salary | total_salary |
+|---|---:|---:|---:|
+| Bangalore | 2 | 50000 | 100000 |
+| Chennai | 1 | 35000 | 35000 |
+| Hyderabad | 2 | 67500 | 135000 |
 
-- Do not commit `terraform/terraform.tfvars`, Terraform state files, service account keys, passwords, access tokens, or private customer data.
-- The included CSV is synthetic sample data for demonstration.
-- Review `git status` before committing.
+### Query B — Cleaned customer records
 
-## Cost and cleanup
+```sql
+SELECT *
+FROM `gcp-data-project-510810.practice.customers_cleaned`
+ORDER BY customer_id;
+```
 
-Cloud Composer may continue to incur charges while running. When finished practicing, review the resources and costs in Google Cloud. Do not run `terraform destroy` blindly: it can remove infrastructure, and the project dataset/data should be protected. Review the Terraform plan and any retained resources before cleanup.
+The sample input contains **5 customer records**. Check that the cleaned table returns the expected records and that the city report contains the three sample cities above. These expected figures apply to the repository's sample CSV; results will differ if you change the input data.
 
-## Next project
+You can also run the queries from [`sql/verification_queries.sql`](sql/verification_queries.sql).
 
-**Project 2 — Customer Analytics Pipeline with GCS Sensor** will be a separate repository/version. It will add an Airflow GCS object-existence sensor to wait for the configured CSV while a DAG run is active. A sensor alone does not trigger a new DAG run when a file arrives; event-driven triggering can be added as a later enhancement.
+---
+
+# 📸 Execution evidence
+
+The following screenshots were captured from the completed project run and its BigQuery verification queries.
+
+### Airflow — successful pipeline run
+
+![Airflow DAG success](docs/screenshots/airflow-dag-success.png)
+
+### BigQuery — city-level analytics output
+
+![BigQuery city report](docs/screenshots/bigquery-city-report.png)
+
+### BigQuery — cleaned customer records
+
+![BigQuery cleaned customer records](docs/screenshots/bigquery-cleaned-customers.png)
+
+---
+
+## 🌍 Location configuration
+
+| Service | Location |
+|---|---|
+| Google Cloud Storage bucket | `US` multi-region |
+| BigQuery dataset and query jobs | `US` multi-region |
+| Cloud Composer environment | `us-central1` region |
+
+These values serve different purposes: BigQuery and GCS use the `US` multi-region, while Cloud Composer must be deployed to a specific region such as `us-central1`.
+
+## 🛠️ Troubleshooting
+
+- **Dataset already exists (HTTP 409):** import the existing dataset into Terraform state if it is not already tracked. Do not delete a dataset simply to resolve this error.
+- **Bucket name unavailable:** select another globally unique name in `terraform.tfvars`.
+- **Terraform permission errors:** verify billing, API enablement permissions, IAM permissions, and project quotas.
+- **DAG not visible:** check the Composer DAGs folder, DAG import errors, and the `composer_dags_prefix` Terraform output.
+- **GCS or BigQuery access denied:** check the Composer worker service account's bucket access, BigQuery job permissions, and dataset permissions.
+- **Location mismatch:** keep the GCS bucket and BigQuery dataset/job location compatible; this example uses `US` for both.
+- **Task failed:** open the task's Airflow logs, identify the first error, and correct that error before rerunning.
+
+## 💰 Cost and cleanup
+
+Cloud Composer can incur ongoing charges while the environment exists, including when the DAG is idle. Review current Google Cloud pricing before deployment and remove resources you no longer need. Before running `terraform destroy`, inspect the plan carefully: it can delete infrastructure, and resource retention settings do not replace backups. Protect any data you want to keep.
+
+## 🔐 Security checklist
+
+- [ ] Keep `terraform/terraform.tfvars` out of version control.
+- [ ] Never commit service-account key JSON files, passwords, or tokens.
+- [ ] Review screenshots and sample data before publishing publicly.
+- [ ] Review IAM permissions using least privilege.
+- [ ] Review Terraform plans before applying or destroying resources.
+
+## 👨‍💻 Author
+
+**Gummadi Pavan Kumar**  
+Cloud & Data Engineering Portfolio
+
+This project demonstrates practical skills in Google Cloud, Terraform, Apache Airflow, BigQuery, Python, SQL, data quality, and pipeline orchestration.
+
+## 🏷️ Suggested GitHub topics
+
+`gcp` · `google-cloud` · `terraform` · `cloud-composer` · `apache-airflow` · `bigquery` · `cloud-storage` · `data-engineering` · `etl-pipeline` · `python` · `sql`
+
+---
+
+<div align="center">
+
+**Built to demonstrate an end-to-end, reproducible cloud data engineering workflow.**
+
+</div>
