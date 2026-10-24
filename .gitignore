@@ -1,0 +1,14 @@
+# Terraform generated files and state
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform/.terraform.lock.hcl
+
+# Local environment-specific variables; do not commit these
+terraform/terraform.tfvars
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+.env

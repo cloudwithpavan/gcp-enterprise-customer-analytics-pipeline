@@ -1,0 +1,3 @@
+# Cloud Composer images include Airflow and common Google Cloud providers.
+# Do not install packages blindly; only add a package if the Composer image lacks it.
+# This DAG uses google-cloud-bigquery and google-cloud-storage client libraries.
